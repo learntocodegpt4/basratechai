@@ -1,0 +1,183 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for User Service
+  postgres-user:
+    image: postgres:16-alpine
+    container_name: basratech-postgres-user
+    environment:
+      POSTGRES_DB: basratech_users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    networks:
+      - basratech-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PostgreSQL Database for HR Service
+  postgres-hr:
+    image: postgres:16-alpine
+    container_name: basratech-postgres-hr
+    environment:
+      POSTGRES_DB: basratech_hr
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-hr-data:/var/lib/postgresql/data
+    networks:
+      - basratech-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB for document storage
+  mongodb:
+    image: mongo:7
+    container_name: basratech-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo123}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - basratech-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ Message Bus
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: basratech-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-rabbitmq123}
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - basratech-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # User Service (.NET Microservice)
+  user-service:
+    build:
+      context: ./backend/UserService
+      dockerfile: Dockerfile
+    container_name: basratech-user-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__DefaultConnection=Host=postgres-user;Database=basratech_users;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres123}
+      - JWT__Secret=${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      - JWT__Expiry=3600
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - basratech-network
+    restart: unless-stopped
+
+  # HR Service (.NET Microservice)
+  hr-service:
+    build:
+      context: ./backend/HRService
+      dockerfile: Dockerfile
+    container_name: basratech-hr-service
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5002
+      - ConnectionStrings__DefaultConnection=Host=postgres-hr;Database=basratech_hr;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres123}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=${RABBITMQ_USER:-admin}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD:-rabbitmq123}
+      - CompanyDetails__Name=BasraTech AI
+      - CompanyDetails__Address=Mumbai, India
+      - CompanyDetails__GSTIN=27AABCU9603R1ZM
+      - CompanyDetails__Proprietor=Amreek Basra
+      - CompanyDetails__Email=amreekbasra@basratechai.com
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres-hr:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - basratech-network
+    restart: unless-stopped
+
+  # API Gateway (YARP/Ocelot)
+  api-gateway:
+    build:
+      context: ./backend/ApiGateway
+      dockerfile: Dockerfile
+    container_name: basratech-api-gateway
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - user-service
+      - hr-service
+    networks:
+      - basratech-network
+    restart: unless-stopped
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: basratech-frontend
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://api-gateway:5000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - basratech-network
+    restart: unless-stopped
+
+volumes:
+  postgres-user-data:
+    driver: local
+  postgres-hr-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
+networks:
+  basratech-network:
+    driver: bridge
