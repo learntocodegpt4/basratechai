@@ -777,7 +777,7 @@
     ]
   },
   "packageFolders": {
-    "/home/runner/.nuget/packages/": {}
+    "/home/runner/work/basratechai/.codeql-scratch/dbs/csharp/working/packages": {}
   },
   "project": {
     "version": "1.0.0",
@@ -785,7 +785,7 @@
       "projectUniqueName": "/home/runner/work/basratechai/basratechai/backend/UserService/src/UserService.Infrastructure/UserService.Infrastructure.csproj",
       "projectName": "UserService.Infrastructure",
       "projectPath": "/home/runner/work/basratechai/basratechai/backend/UserService/src/UserService.Infrastructure/UserService.Infrastructure.csproj",
-      "packagesPath": "/home/runner/.nuget/packages/",
+      "packagesPath": "/home/runner/work/basratechai/.codeql-scratch/dbs/csharp/working/packages",
       "outputPath": "/home/runner/work/basratechai/basratechai/backend/UserService/src/UserService.Infrastructure/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
@@ -847,6 +847,16 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[8.0.22, 8.0.22]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[8.0.22, 8.0.22]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
