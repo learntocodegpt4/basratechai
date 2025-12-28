@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AppBar,
   Toolbar,
@@ -17,8 +18,13 @@ import {
   Container,
   Typography,
   Stack,
+  Menu as MuiMenu,
+  MenuItem,
+  Avatar,
+  Divider,
 } from "@mui/material";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, User, LayoutDashboard } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { name: "Home", href: "#home" },
@@ -32,6 +38,9 @@ const navLinks = [
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,6 +49,28 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleUserMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleDashboard = () => {
+    handleUserMenuClose();
+    if (user?.role === 'hr' || user?.role === 'admin') {
+      router.push('/hr/dashboard');
+    } else {
+      router.push('/employee/dashboard');
+    }
+  };
+
+  const handleLogout = () => {
+    handleUserMenuClose();
+    logout();
+  };
 
   return (
     <AppBar
@@ -137,29 +168,129 @@ export default function Header() {
             ))}
           </Stack>
 
-          {/* CTA Button */}
-          <Box sx={{ display: { xs: "none", md: "block" } }}>
-            <Button
-              component={Link}
-              href="#contact"
-              variant="contained"
-              sx={{
-                px: 3,
-                py: 1.25,
-                background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
-                borderRadius: "50px",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                textTransform: "none",
-                "&:hover": {
-                  boxShadow: "0 10px 30px rgba(14, 165, 233, 0.3)",
-                  transform: "scale(1.05)",
-                },
-                transition: "all 0.3s ease",
-              }}
-            >
-              Get Started
-            </Button>
+          {/* CTA Buttons / User Menu */}
+          <Box sx={{ display: { xs: "none", md: "flex" }, gap: 2, alignItems: "center" }}>
+            {isAuthenticated ? (
+              <>
+                <IconButton
+                  onClick={handleUserMenuOpen}
+                  sx={{
+                    p: 0,
+                    border: "2px solid",
+                    borderColor: "#0ea5e9",
+                    "&:hover": {
+                      borderColor: "#22d3ee",
+                    },
+                  }}
+                >
+                  <Avatar
+                    sx={{
+                      bgcolor: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+                      width: 40,
+                      height: 40,
+                    }}
+                  >
+                    {user?.name?.charAt(0).toUpperCase() || "U"}
+                  </Avatar>
+                </IconButton>
+                <MuiMenu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleUserMenuClose}
+                  PaperProps={{
+                    sx: {
+                      mt: 1.5,
+                      bgcolor: "rgba(10, 22, 40, 0.98)",
+                      backdropFilter: "blur(12px)",
+                      border: "1px solid rgba(14, 165, 233, 0.2)",
+                      borderRadius: 2,
+                      minWidth: 200,
+                    },
+                  }}
+                >
+                  <Box sx={{ px: 2, py: 1.5 }}>
+                    <Typography variant="subtitle2" sx={{ color: "white", fontWeight: 600 }}>
+                      {user?.name}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "#9ca3af" }}>
+                      {user?.email}
+                    </Typography>
+                  </Box>
+                  <Divider sx={{ borderColor: "rgba(14, 165, 233, 0.2)" }} />
+                  <MenuItem
+                    onClick={handleDashboard}
+                    sx={{
+                      color: "#d1d5db",
+                      gap: 1.5,
+                      "&:hover": {
+                        bgcolor: "rgba(14, 165, 233, 0.1)",
+                        color: "#22d3ee",
+                      },
+                    }}
+                  >
+                    <LayoutDashboard size={18} />
+                    Dashboard
+                  </MenuItem>
+                  <MenuItem
+                    onClick={handleLogout}
+                    sx={{
+                      color: "#d1d5db",
+                      gap: 1.5,
+                      "&:hover": {
+                        bgcolor: "rgba(239, 68, 68, 0.1)",
+                        color: "#ef4444",
+                      },
+                    }}
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </MenuItem>
+                </MuiMenu>
+              </>
+            ) : (
+              <>
+                <Button
+                  component={Link}
+                  href="/auth/login"
+                  sx={{
+                    px: 3,
+                    py: 1,
+                    color: "#d1d5db",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    textTransform: "none",
+                    "&:hover": {
+                      color: "#22d3ee",
+                      backgroundColor: "rgba(14, 165, 233, 0.1)",
+                    },
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  Login
+                </Button>
+                <Button
+                  component={Link}
+                  href="/auth/register"
+                  variant="contained"
+                  sx={{
+                    px: 3,
+                    py: 1.25,
+                    background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+                    borderRadius: "50px",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    textTransform: "none",
+                    "&:hover": {
+                      boxShadow: "0 10px 30px rgba(14, 165, 233, 0.3)",
+                      transform: "scale(1.05)",
+                    },
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  Sign Up
+                </Button>
+              </>
+            )}
           </Box>
 
           {/* Mobile Menu Button */}
@@ -239,6 +370,43 @@ export default function Header() {
           >
             Get Started
           </Button>
+          {!isAuthenticated && (
+            <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+              <Button
+                component={Link}
+                href="/auth/login"
+                variant="outlined"
+                fullWidth
+                onClick={() => setIsMobileMenuOpen(false)}
+                sx={{
+                  py: 1.5,
+                  borderColor: "#0ea5e9",
+                  color: "#0ea5e9",
+                  borderRadius: "50px",
+                  fontWeight: 600,
+                  textTransform: "none",
+                }}
+              >
+                Login
+              </Button>
+              <Button
+                component={Link}
+                href="/auth/register"
+                variant="contained"
+                fullWidth
+                onClick={() => setIsMobileMenuOpen(false)}
+                sx={{
+                  py: 1.5,
+                  background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+                  borderRadius: "50px",
+                  fontWeight: 600,
+                  textTransform: "none",
+                }}
+              >
+                Sign Up
+              </Button>
+            </Stack>
+          )}
         </Box>
       </Drawer>
     </AppBar>

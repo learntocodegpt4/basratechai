@@ -21,6 +21,7 @@ import GoogleIcon from '@mui/icons-material/Google';
 import MicrosoftIcon from '@mui/icons-material/Microsoft';
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -32,6 +33,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const { register } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +51,14 @@ export default function RegisterPage() {
 
     setIsLoading(true);
 
-    // Simulate registration - replace with actual API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setIsLoading(false);
-    // Redirect to login or dashboard
+    try {
+      await register(formData.email, formData.password, formData.name);
+      // Redirect is handled in the auth context
+    } catch (err: any) {
+      setError(err.message || "Registration failed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

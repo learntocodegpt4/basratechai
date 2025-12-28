@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import MuiProvider from "@/components/MuiProvider";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
   title: "BasraTech AI - Future Ready | AI Solutions & Digital Innovation",
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en" className="scroll-smooth">
       <body className="antialiased">
         <MuiProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </MuiProvider>
       </body>
     </html>
