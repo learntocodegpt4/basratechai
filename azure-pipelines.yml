@@ -1,0 +1,271 @@
+# Azure DevOps Pipeline for BasraTech AI
+# Builds and deploys the Next.js frontend and .NET microservices
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    exclude:
+      - README.md
+      - docs/**
+
+variables:
+  dockerRegistry: 'basratechacr.azurecr.io'
+  imageRepository: 'basratech'
+  dockerfilePathFrontend: 'Dockerfile.frontend'
+  containerRegistry: 'BasraTechACR'
+  
+  # Microservices
+  userServicePath: 'backend/UserService'
+  hrServicePath: 'backend/HRService'
+  gatewayPath: 'backend/ApiGateway'
+  
+  # Tags
+  tag: '$(Build.BuildId)'
+
+stages:
+  # Stage 1: Build and Test
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      # Frontend Build
+      - job: BuildFrontend
+        displayName: 'Build Next.js Frontend'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '20.x'
+            displayName: 'Install Node.js'
+
+          - script: |
+              npm ci
+              npm run build
+              npm run lint
+            displayName: 'Install dependencies and build'
+
+          - task: Docker@2
+            displayName: 'Build Frontend Docker Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/frontend'
+              command: 'build'
+              Dockerfile: '$(dockerfilePathFrontend)'
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Frontend Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/frontend'
+              command: 'push'
+              tags: |
+                $(tag)
+                latest
+
+      # User Service Build
+      - job: BuildUserService
+        displayName: 'Build User Service'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
+            inputs:
+              version: '8.x'
+
+          - script: |
+              cd $(userServicePath)
+              dotnet restore
+              dotnet build --configuration Release
+              dotnet test --configuration Release --no-build
+            displayName: 'Build and Test User Service'
+
+          - task: Docker@2
+            displayName: 'Build User Service Docker Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/user-service'
+              command: 'build'
+              Dockerfile: '$(userServicePath)/Dockerfile'
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push User Service Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/user-service'
+              command: 'push'
+              tags: |
+                $(tag)
+                latest
+
+      # HR Service Build
+      - job: BuildHRService
+        displayName: 'Build HR Service'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
+            inputs:
+              version: '8.x'
+
+          - script: |
+              cd $(hrServicePath)
+              dotnet restore
+              dotnet build --configuration Release
+              dotnet test --configuration Release --no-build
+            displayName: 'Build and Test HR Service'
+
+          - task: Docker@2
+            displayName: 'Build HR Service Docker Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/hr-service'
+              command: 'build'
+              Dockerfile: '$(hrServicePath)/Dockerfile'
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push HR Service Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/hr-service'
+              command: 'push'
+              tags: |
+                $(tag)
+                latest
+
+      # API Gateway Build
+      - job: BuildGateway
+        displayName: 'Build API Gateway'
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
+            inputs:
+              version: '8.x'
+
+          - script: |
+              cd $(gatewayPath)
+              dotnet restore
+              dotnet build --configuration Release
+            displayName: 'Build API Gateway'
+
+          - task: Docker@2
+            displayName: 'Build Gateway Docker Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/api-gateway'
+              command: 'build'
+              Dockerfile: '$(gatewayPath)/Dockerfile'
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Gateway Image'
+            inputs:
+              containerRegistry: '$(containerRegistry)'
+              repository: '$(imageRepository)/api-gateway'
+              command: 'push'
+              tags: |
+                $(tag)
+                latest
+
+  # Stage 2: Deploy to Development
+  - stage: DeployDev
+    displayName: 'Deploy to Development'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: DeployDevelopment
+        displayName: 'Deploy to Dev Environment'
+        environment: 'development'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: 'Deploy to Azure Container Apps'
+                  inputs:
+                    azureSubscription: 'BasraTech-Azure-Connection'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      # Update container apps with new images
+                      az containerapp update \
+                        --name basratech-frontend-dev \
+                        --resource-group basratech-rg-dev \
+                        --image $(dockerRegistry)/$(imageRepository)/frontend:$(tag)
+                      
+                      az containerapp update \
+                        --name basratech-user-service-dev \
+                        --resource-group basratech-rg-dev \
+                        --image $(dockerRegistry)/$(imageRepository)/user-service:$(tag)
+                      
+                      az containerapp update \
+                        --name basratech-hr-service-dev \
+                        --resource-group basratech-rg-dev \
+                        --image $(dockerRegistry)/$(imageRepository)/hr-service:$(tag)
+                      
+                      az containerapp update \
+                        --name basratech-gateway-dev \
+                        --resource-group basratech-rg-dev \
+                        --image $(dockerRegistry)/$(imageRepository)/api-gateway:$(tag)
+
+  # Stage 3: Deploy to Production
+  - stage: DeployProd
+    displayName: 'Deploy to Production'
+    dependsOn: Build
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployProduction
+        displayName: 'Deploy to Production Environment'
+        environment: 'production'
+        pool:
+          vmImage: 'ubuntu-latest'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: 'Deploy to Azure Container Apps'
+                  inputs:
+                    azureSubscription: 'BasraTech-Azure-Connection'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      # Update container apps with new images
+                      az containerapp update \
+                        --name basratech-frontend-prod \
+                        --resource-group basratech-rg-prod \
+                        --image $(dockerRegistry)/$(imageRepository)/frontend:$(tag)
+                      
+                      az containerapp update \
+                        --name basratech-user-service-prod \
+                        --resource-group basratech-rg-prod \
+                        --image $(dockerRegistry)/$(imageRepository)/user-service:$(tag)
+                      
+                      az containerapp update \
+                        --name basratech-hr-service-prod \
+                        --resource-group basratech-rg-prod \
+                        --image $(dockerRegistry)/$(imageRepository)/hr-service:$(tag)
+                      
+                      az containerapp update \
+                        --name basratech-gateway-prod \
+                        --resource-group basratech-rg-prod \
+                        --image $(dockerRegistry)/$(imageRepository)/api-gateway:$(tag)
