@@ -1,11 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "7fi8f0ysHtE=",
+  "dgSpecHash": "Uogil1YWdHg=",
   "success": true,
   "projectFilePath": "/home/runner/work/basratechai/basratechai/backend/UserService/src/UserService.Domain/UserService.Domain.csproj",
-  "expectedPackageFiles": [
-    "/home/runner/work/basratechai/.codeql-scratch/dbs/csharp/working/packages/microsoft.netcore.app.ref/8.0.22/microsoft.netcore.app.ref.8.0.22.nupkg.sha512",
-    "/home/runner/work/basratechai/.codeql-scratch/dbs/csharp/working/packages/microsoft.aspnetcore.app.ref/8.0.22/microsoft.aspnetcore.app.ref.8.0.22.nupkg.sha512"
-  ],
+  "expectedPackageFiles": [],
   "logs": []
 }
