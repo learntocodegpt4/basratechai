@@ -56,15 +56,20 @@ interface DailyLog {
   workHours: number;
   breakHours: number;
   netHours: number;
+  isWeekend: boolean;
+  isHoliday: boolean;
 }
 
 interface MonthlySummary {
+  totalWorkDays: number;
   totalWorkHours: number;
   totalBreakHours: number;
-  totalNetHours: number;
-  daysPresent: number;
-  dailyData?: DailyLog[];
-  DailyLogs?: DailyLog[];
+  netWorkHours: number;
+  averageWorkHoursPerDay: number;
+  expectedWorkDays: number;
+  weekendDays: number;
+  holidayDays: number;
+  dailyLogs: DailyLog[];
 }
 
 export default function StaffDashboardPage() {
@@ -76,11 +81,15 @@ export default function StaffDashboardPage() {
     netHours: 0,
   });
   const [monthlySummary, setMonthlySummary] = useState<MonthlySummary>({
+    totalWorkDays: 0,
     totalWorkHours: 0,
     totalBreakHours: 0,
-    totalNetHours: 0,
-    daysPresent: 0,
-    dailyData: [],
+    netWorkHours: 0,
+    averageWorkHoursPerDay: 0,
+    expectedWorkDays: 0,
+    weekendDays: 0,
+    holidayDays: 0,
+    dailyLogs: [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -591,7 +600,7 @@ export default function StaffDashboardPage() {
                       Net Work Hours
                     </Typography>
                     <Typography variant="h5" fontWeight={700} color="#22d3ee">
-                      {formatHours(monthlySummary.totalNetHours)}
+                      {formatHours(monthlySummary.netWorkHours)}
                     </Typography>
                   </Paper>
                   <Paper
@@ -607,10 +616,10 @@ export default function StaffDashboardPage() {
                         color="text.secondary"
                         gutterBottom
                       >
-                        Days Present
+                        Total Work Days
                       </Typography>
                       <Typography variant="h5" fontWeight={700} color="#a78bfa">
-                        {monthlySummary.daysPresent}
+                        {monthlySummary.totalWorkDays}
                       </Typography>
                     </Paper>
                   </Box>
@@ -618,13 +627,13 @@ export default function StaffDashboardPage() {
                   <Divider sx={{ my: 3, borderColor: "#1f2937" }} />
 
                   {/* Charts */}
-                  {monthlySummary.dailyData && monthlySummary.dailyData.length > 0 && (
+                  {monthlySummary.dailyLogs && monthlySummary.dailyLogs.length > 0 && (
                   <Box>
                     <Typography variant="h6" fontWeight={600} mb={3}>
                       Daily Work Hours Trend
                     </Typography>
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={monthlySummary.dailyData}>
+                      <LineChart data={monthlySummary.dailyLogs}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                         <XAxis
                           dataKey="date"
@@ -662,7 +671,7 @@ export default function StaffDashboardPage() {
                         Work vs Break Hours
                       </Typography>
                       <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={monthlySummary.dailyData}>
+                        <BarChart data={monthlySummary.dailyLogs}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
                           <XAxis
                             dataKey="date"
