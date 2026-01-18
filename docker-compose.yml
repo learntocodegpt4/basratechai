@@ -113,6 +113,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5002
       - ConnectionStrings__DefaultConnection=Host=postgres-hr;Database=basratech_hr;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres123}
+      - MongoDB__ConnectionString=mongodb://admin:${MONGO_PASSWORD:-mongo123}@mongodb:27017
+      - MongoDB__DatabaseName=basratech_hr
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Port=5672
       - RabbitMQ__Username=${RABBITMQ_USER:-admin}
@@ -126,6 +128,8 @@ services:
       - "5002:5002"
     depends_on:
       postgres-hr:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy

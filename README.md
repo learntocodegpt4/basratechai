@@ -13,14 +13,18 @@ A modern, enterprise-grade AI solutions platform built with Next.js, Material-UI
 - **Authentication** - Login with email, Google OAuth, or Microsoft OAuth
 - **MFA Support** - Multi-factor authentication for enhanced security
 - **HR Management** - Generate professional salary slips with company letterhead
+- **Staff Onboarding** - Complete employee onboarding and information management (Admin)
+- **Time Tracking** - Staff login/logout, break management, and work hours tracking
+- **Dashboard & Analytics** - Monthly summaries with charts for work hours and attendance
+- **Holiday Management** - System admin can manage company holidays and recurring holidays
 
 ### Backend Microservices
 - **User Service** - Authentication, authorization, and user management
-- **HR Service** - Employee management and salary slip generation
+- **HR Service** - Employee management, salary slip generation, staff onboarding, and time tracking
 - **API Gateway** - YARP-based reverse proxy for routing and load balancing
 - **CQRS Pattern** - Separation of read and write operations
-- **PostgreSQL** - Reliable relational database for data persistence
-- **MongoDB** - Document storage for flexible data models
+- **PostgreSQL** - Reliable relational database for legacy data persistence
+- **MongoDB** - Document storage for flexible staff and time tracking data models
 - **RabbitMQ** - Message bus for inter-service communication
 
 ## 📋 Sections
@@ -37,10 +41,13 @@ A modern, enterprise-grade AI solutions platform built with Next.js, Material-UI
 - **Login** - User authentication with OAuth support
 - **Register** - User registration with MFA setup
 - **HR Dashboard** - Admin-only salary slip generation
+- **Staff Management** - Admin-only staff onboarding and management
+- **Holiday Management** - Admin-only company holiday configuration
+- **Staff Dashboard** - Personal time tracking and work hours analytics
 
 ### Backend Services
 - **User Service** - `/api/auth/*`, `/api/users/*`
-- **HR Service** - `/api/employees/*`, `/api/salary-slips/*`, `/api/payroll/*`
+- **HR Service** - `/api/employees/*`, `/api/salary-slips/*`, `/api/payroll/*`, `/api/staff/*`, `/api/timetracking/*`, `/api/holidays/*`
 - **API Gateway** - Unified entry point at port 5000
 
 ## 🛠️ Tech Stack
@@ -227,6 +234,36 @@ The application follows a modern dark theme with:
   - Work days and leave days calculation
 - Automatic calculation of PF and tax
 - Download as PDF
+
+### Staff Onboarding & Management (Admin)
+- Complete employee onboarding with comprehensive information capture
+- Personal details: Name, Email, Phone, Designation, Department, Joining Date, Address
+- Emergency contact information
+- Bank account details for salary processing
+- Document management
+- Staff status management (Active/Inactive)
+- Search and filter capabilities
+
+### Time Tracking System (Staff)
+- **Login/Logout**: Track daily work start and end times
+- **Break Management**: 
+  - Break In: Start a break with optional type (Tea Break, Lunch Break, etc.) and comments
+  - Break Out: Resume work and automatically calculate break duration
+- **Real-time Status**: View current work status (Logged In, On Break, Logged Out)
+- **Today's Summary**: Live view of work hours, break hours, and net work hours
+- **Monthly Dashboard**:
+  - Total work days for the month
+  - Total work hours, break hours, and net work hours
+  - Average work hours per day
+  - Expected work days (excluding weekends and holidays)
+  - Interactive charts showing daily work trends
+  - Bar charts for work vs break hours comparison
+
+### Holiday Management (Admin)
+- Add company holidays with name, date, and description
+- Mark holidays as recurring (applies every year)
+- View all holidays in a sortable table
+- Holidays are automatically excluded from work day calculations
 
 ### Company Details
 - **Name**: BasraTech AI
